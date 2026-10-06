@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.deps import require_permission
-from app.emailer import send_email
+from app.emailer import send_email_safe
 from app.models import UserRole, AccountStatus, Decision, MembershipRequest, Profile, utcnow
 from app.schemas import Message, PendingRequestOut, RejectIn
 from app.security import as_utc
@@ -53,7 +53,7 @@ def approve(request_id: uuid.UUID, admin: Profile = Depends(reviewer), db: Sessi
     db.add(UserRole(user_id=user.id,role='volunteer',assigned_by=admin.id))
     audit(db, admin.id, "membership.approved", "membership_request", req.id, {"user_id": str(user.id)})
     db.commit()
-    send_email(user.email, "Bine ai venit în Overthink!",
+    send_email_safe(user.email, "Bine ai venit în Overthink!",
                f"Salut, {user.first_name}! Cererea ta a fost aprobată. Te poți autentifica.")
     return Message(message="Cerere aprobată.")
 
@@ -67,6 +67,6 @@ def reject(request_id: uuid.UUID, body: RejectIn, admin: Profile = Depends(revie
     user.account_status = AccountStatus.rejected.value
     audit(db, admin.id, "membership.rejected", "membership_request", req.id, {"user_id": str(user.id)})
     db.commit()
-    send_email(user.email, "Despre cererea ta Overthink",
+    send_email_safe(user.email, "Despre cererea ta Overthink",
                f"Salut, {user.first_name}. Cererea ta nu a fost aprobată.\nMotiv: {body.reason}")
     return Message(message="Cerere respinsă.")

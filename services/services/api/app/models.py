@@ -64,7 +64,18 @@ class AuthToken(Base):
     token_digest: Mapped[str]=mapped_column(String(64))
     expires_at: Mapped[datetime]=_ts()
     used_at: Mapped[datetime|None]=_ts(nullable=True)
+    invalidated_at: Mapped[datetime|None]=_ts(nullable=True)
+    attempt_count: Mapped[int]=mapped_column(Integer,server_default=sqltext('0'))
     created_at: Mapped[datetime]=_ts(server_default=sqltext('now()'))
+
+class AuthRateLimitEvent(Base):
+    __tablename__='auth_rate_limit_events'
+    id: Mapped[uuid.UUID]=_pk()
+    action: Mapped[str]=mapped_column(Text)
+    email_digest: Mapped[str|None]=mapped_column(String(64),nullable=True)
+    ip_digest: Mapped[str|None]=mapped_column(String(64),nullable=True)
+    created_at: Mapped[datetime]=_ts(server_default=sqltext('now()'))
+
 
 class AuthSession(Base):
     __tablename__='auth_sessions'

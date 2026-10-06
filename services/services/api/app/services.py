@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.emailer import send_email
+from app.emailer import send_email_safe
 from app.models import AccountStatus, AuditLog, UserRole, PermissionGrant, Profile
 
 def audit(db:Session, actor_id:uuid.UUID|None, action:str, entity_type:str,
@@ -22,5 +22,5 @@ def notify_reviewers(db:Session, subject:str, body:str)->int:
     count=0
     for person in reviewers:
         if has_permission(db,person.id,'members.review'):
-            send_email(person.email,subject,body);count+=1
+            send_email_safe(person.email,subject,body);count+=1
     return count

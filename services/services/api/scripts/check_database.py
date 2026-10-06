@@ -14,7 +14,7 @@ required = {
     'membership_requests','member_departments','teams','team_members','user_roles',
     'projects','permission_grants','project_members','activities','activity_departments',
     'activity_teams','activity_participants','activity_codes','time_entries',
-    'time_entry_feedback','user_settings','audit_logs','notification_outbox'
+    'time_entry_feedback','user_settings','audit_logs','notification_outbox','auth_rate_limit_events'
 }
 engine=create_engine(url,pool_pre_ping=True)
 with engine.connect() as c:
@@ -33,3 +33,7 @@ with engine.connect() as c:
     if not constraint:
         raise SystemExit('LIPSEȘTE constrângerea anti-suprapunere a intervalelor!')
     print('OK: verificarea de suprapunere a intervalelor este instalată.')
+    cols=set(c.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='auth_tokens'")).scalars().all())
+    if not {'invalidated_at','attempt_count'} <= cols:
+        raise SystemExit('LIPSESC coloanele Auth 1.1 din auth_tokens. Rulează alembic upgrade head.')
+    print('OK: securitatea codurilor de verificare Auth 1.1 este instalată.')

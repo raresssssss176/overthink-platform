@@ -32,6 +32,11 @@ class TokenIn(BaseModel):
     token: str = Field(min_length=10, max_length=200)
 
 
+class VerifyEmailCodeIn(BaseModel):
+    email: EmailStr
+    code: str = Field(pattern=r"^\d{6}$")
+
+
 class LoginIn(BaseModel):
     email: EmailStr
     password: str = Field(max_length=128)

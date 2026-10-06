@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -37,6 +38,25 @@ def burn_password_check(password: str) -> None:
 def new_raw_token() -> str:
     return secrets.token_urlsafe(32)
 
+
+
+
+def new_numeric_code(length: int = 6) -> str:
+    if length < 6 or length > 10:
+        raise ValueError("verification code length must be between 6 and 10")
+    return f"{secrets.randbelow(10 ** length):0{length}d}"
+
+
+def keyed_digest(context: str, value: str) -> str:
+    """HMAC digest for low-entropy/private values (OTP, IP/e-mail rate keys)."""
+    message = f"{context}:{value}".encode()
+    return hmac.new(settings.auth_pepper_secret.encode(), message, hashlib.sha256).hexdigest()
+
+
+def hash_verification_code(token_id: uuid.UUID, user_id: uuid.UUID, code: str) -> str:
+    # token_id provides per-code salt/domain separation, so the same 6-digit code
+    # issued twice does not result in the same database digest.
+    return keyed_digest("verify-email", f"{token_id}:{user_id}:{code}")
 
 def hash_token(raw: str) -> str:
     # Tokens are 256-bit random, so a fast hash is fine (unlike passwords).
