@@ -1,37 +1,67 @@
 // lib/screens/auth/verify_email_screen.dart
 import 'package:flutter/material.dart';
+
 import '../../services/api_service.dart';
+import '../../widgets/auth_widgets.dart';
 import 'login_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
 
-  const VerifyEmailScreen({Key? key, required this.email}) : super(key: key);
+  const VerifyEmailScreen({super.key, required this.email});
 
   @override
-  _VerifyEmailScreenState createState() => _VerifyEmailScreenState();
+  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final _codeController = TextEditingController();
   bool _isLoading = false;
+  bool _isResending = false;
 
-  void _handleVerify() async {
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  void _show(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<void> _handleVerify() async {
+    final code = _codeController.text.trim();
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      _show('Introdu codul de 6 cifre din email.');
+      return;
+    }
+
     setState(() => _isLoading = true);
-
-    bool success = await ApiService.verifyEmail(widget.email, _codeController.text);
-
+    final result = await ApiService.verifyEmail(widget.email, code);
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email verificat cu succes!')));
-      Navigator.pushAndRemoveUntil(
-        context,
+    if (result.isSuccess) {
+      _show('Email verificat cu succes! Așteaptă aprobarea unui administrator.');
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
+        (route) => false,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cod invalid sau expirat.')));
+      _show(result.message!);
+    }
+  }
+
+  Future<void> _handleResend() async {
+    setState(() => _isResending = true);
+    final result = await ApiService.resendVerification(widget.email);
+    if (!mounted) return;
+    setState(() => _isResending = false);
+
+    if (result.isSuccess) {
+      _show('Dacă adresa există, vei primi un cod nou pe email.');
+    } else {
+      _show(result.message!);
     }
   }
 
@@ -40,58 +70,46 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              const Text('OVERTHINK', style: TextStyle(color: Colors.red, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2)),
+              const OverthinkLogo(),
               const SizedBox(height: 60),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
-                child: Column(
-                  children: [
-                    const Text('Verificare Email', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 15),
-                    Text(
-                      'Am trimis un cod pe adresa\n${widget.email}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 30),
-                    TextField(
-                      controller: _codeController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
-                      decoration: InputDecoration(
-                        hintText: '000000',
-                        hintStyle: const TextStyle(color: Colors.white24),
-                        filled: true,
-                        fillColor: Colors.black26,
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.transparent)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.red)),
+              AuthCard(
+                title: 'Verificare email',
+                children: [
+                  Text(
+                    'Am trimis un cod pe adresa\n${widget.email}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _codeController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
+                    decoration: authInputDecoration('Cod', hint: '000000'),
+                  ),
+                  const SizedBox(height: 24),
+                  AuthButton(
+                    label: 'Verifică contul',
+                    loading: _isLoading,
+                    onPressed: _handleVerify,
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: TextButton(
+                      onPressed: _isResending ? null : _handleResend,
+                      child: Text(
+                        _isResending ? 'Se trimite...' : 'Nu ai primit codul? Trimite din nou',
+                        style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),
-                    const SizedBox(height: 30),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                        ),
-                        onPressed: _isLoading ? null : _handleVerify,
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Verifică contul', style: TextStyle(fontSize: 18, color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),

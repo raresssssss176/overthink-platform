@@ -15,6 +15,9 @@ class RegisterIn(BaseModel):
     birth_date: date
     school: str = Field(min_length=1, max_length=200)
     locality: str = Field(min_length=1, max_length=120)
+    phone: str = Field(pattern=r"^\+?[0-9]{8,15}$")
+    acronym: str = Field(min_length=1, max_length=30)
+    department_ids: list[uuid.UUID] = Field(min_length=1, max_length=5)
     accepted_privacy_policy: bool
 
     @model_validator(mode="after")
@@ -79,6 +82,9 @@ class ProfileOut(BaseModel):
     birth_date: date | None
     school: str | None
     locality: str | None
+    phone: str | None
+    acronym: str | None
+    gender: str | None
     primary_department_id: uuid.UUID | None
     profile_photo_key: str | None
     approved_minutes_cached: int
@@ -115,3 +121,11 @@ class PendingRequestOut(BaseModel):
 
 class RejectIn(BaseModel):
     reason: str = Field(min_length=3, max_length=500)
+
+
+class DepartmentOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+
+    model_config = {"from_attributes": True}

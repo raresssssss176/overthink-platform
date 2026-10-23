@@ -5,7 +5,7 @@ Do not run Base.metadata.create_all against the populated database.
 import enum
 import uuid
 from datetime import datetime, timezone, date
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Uuid, text as sqltext, JSON
+from sqlalchemy import ARRAY, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Uuid, text as sqltext, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase): pass
@@ -34,6 +34,10 @@ class Profile(Base):
     birth_date: Mapped[date|None]=mapped_column(Date,nullable=True)
     school: Mapped[str|None]=mapped_column(Text,nullable=True)
     locality: Mapped[str|None]=mapped_column(Text,nullable=True)
+    phone: Mapped[str|None]=mapped_column(Text,nullable=True)
+    acronym: Mapped[str|None]=mapped_column(Text,nullable=True)
+    gender: Mapped[str|None]=mapped_column(Text,nullable=True)
+    requested_department_ids: Mapped[list[uuid.UUID]]=mapped_column(ARRAY(Uuid),server_default=sqltext("'{}'"))
     primary_department_id: Mapped[uuid.UUID|None]=mapped_column(Uuid,nullable=True)
     profile_photo_key: Mapped[str|None]=mapped_column(Text,nullable=True)
     approved_minutes_cached: Mapped[int]=mapped_column(Integer,server_default=sqltext('0'))
@@ -129,4 +133,14 @@ class AuditLog(Base):
     entity_type: Mapped[str]=mapped_column(Text)
     entity_id: Mapped[uuid.UUID|None]=mapped_column(Uuid,nullable=True)
     metadata_safe_json: Mapped[dict]=mapped_column(JSON,default=dict)
+    created_at: Mapped[datetime]=_ts(server_default=sqltext('now()'))
+
+
+class Department(Base):
+    __tablename__='departments'
+    id: Mapped[uuid.UUID]=_pk()
+    name: Mapped[str]=mapped_column(Text)
+    slug: Mapped[str]=mapped_column(Text)
+    description: Mapped[str|None]=mapped_column(Text,nullable=True)
+    is_active: Mapped[bool]=mapped_column(Boolean,server_default=sqltext('true'))
     created_at: Mapped[datetime]=_ts(server_default=sqltext('now()'))

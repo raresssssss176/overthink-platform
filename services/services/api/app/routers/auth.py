@@ -9,7 +9,7 @@ from app.config import settings
 from app.db import get_db
 from app.deps import get_current_user
 from app.emailer import send_email_safe
-from app.models import AccountStatus, AuthCredential, MembershipRequest, Profile, TokenPurpose, utcnow
+from app.models import AccountStatus, AuthCredential, Department, MembershipRequest, Profile, TokenPurpose, utcnow
 from app.rate_limit import (
     client_ip,
     enforce_verification_attempt_limit,
@@ -86,6 +86,12 @@ def register(body: RegisterIn, request: Request, background_tasks: BackgroundTas
         # registration attempts from becoming an e-mail spam endpoint.
         return _VERIFICATION_GENERIC
 
+    requested = set(body.department_ids)
+    valid = set(db.scalars(select(Department.id).where(
+        Department.id.in_(requested), Department.is_active.is_(True))).all())
+    if valid != requested:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid department selection")
+
     user = Profile(
         first_name=body.first_name.strip(),
         last_name=body.last_name.strip(),
@@ -93,6 +99,9 @@ def register(body: RegisterIn, request: Request, background_tasks: BackgroundTas
         birth_date=body.birth_date,
         school=body.school.strip(),
         locality=body.locality.strip(),
+        phone=body.phone,
+        acronym=body.acronym.strip(),
+        requested_department_ids=list(requested),
         account_status=AccountStatus.email_unverified.value,
         privacy_notice_version=settings.privacy_policy_version,
         privacy_acknowledged_at=utcnow(),
