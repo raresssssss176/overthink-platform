@@ -237,9 +237,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const SizedBox(height: 20),
-              const OverthinkLogo(),
-              const SizedBox(height: 40),
+              const SizedBox(height: 8),
+              const OverthinkHero(),
+              const SizedBox(height: 24),
               AuthCard(
                 title: 'Creează un cont',
                 children: [

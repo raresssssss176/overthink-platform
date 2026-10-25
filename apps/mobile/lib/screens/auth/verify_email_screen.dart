@@ -74,9 +74,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const SizedBox(height: 40),
-              const OverthinkLogo(),
-              const SizedBox(height: 60),
+              const SizedBox(height: 8),
+              const OverthinkHero(),
+              const SizedBox(height: 32),
               AuthCard(
                 title: 'Verificare email',
                 children: [

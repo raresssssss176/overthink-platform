@@ -2,20 +2,25 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.emailer import send_email_safe
-from app.models import AccountStatus, AuditLog, UserRole, PermissionGrant, Profile
+from app.models import AccountStatus, AuditLog, UserRole, PermissionGrant, Profile, utcnow
 
 def audit(db:Session, actor_id:uuid.UUID|None, action:str, entity_type:str,
           entity_id:uuid.UUID|None=None, details:dict|None=None)->None:
     db.add(AuditLog(actor_id=actor_id, action=action, entity_type=entity_type,
                     entity_id=entity_id, metadata_safe_json=details or {}))
 
-def has_permission(db:Session,user_id:uuid.UUID,permission:str)->bool:
-    # Existing two admins are represented by user_roles, not permission_grants.
-    if db.scalar(select(UserRole.user_id).where(UserRole.user_id==user_id, UserRole.role=='admin')):
+def has_permission(db: Session, user_id: uuid.UUID, permission: str) -> bool:
+    # Administrators have every permission.
+    if db.scalar(select(UserRole.user_id).where(UserRole.user_id == user_id, UserRole.role == 'admin')):
         return True
+    # Club-wide grants that are not revoked and have not expired.
     return bool(db.scalar(select(PermissionGrant.id).where(
-        PermissionGrant.user_id==user_id,PermissionGrant.permission==permission,
-        PermissionGrant.scope_type=='club',PermissionGrant.revoked_at.is_(None))))
+        PermissionGrant.user_id == user_id,
+        PermissionGrant.permission == permission,
+        PermissionGrant.scope_type == 'club',
+        PermissionGrant.revoked_at.is_(None),
+        PermissionGrant.expires_at > utcnow(),
+    )))
 
 def notify_reviewers(db:Session, subject:str, body:str)->int:
     reviewers=db.scalars(select(Profile).where(Profile.account_status==AccountStatus.active.value)).all()

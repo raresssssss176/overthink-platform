@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.deps import get_current_user
-from app.models import Decision, MembershipRequest, Profile, utcnow
+from app.models import Decision, MembershipRequest, Profile, UserRole, utcnow
 from app.schemas import MembershipStatusOut, Message, ProfileOut
 from app.security import as_utc
 from app.services import notify_reviewers
@@ -16,8 +16,9 @@ router = APIRouter(tags=["users"])
 
 
 @router.get("/users/me", response_model=ProfileOut)
-def me(user: Profile = Depends(get_current_user)):
-    return user
+def me(user: Profile = Depends(get_current_user), db: Session = Depends(get_db)):
+    roles = list(db.scalars(select(UserRole.role).where(UserRole.user_id == user.id)).all())
+    return ProfileOut.model_validate(user).model_copy(update={"roles": roles})
 
 
 def _latest_request(db: Session, user: Profile) -> MembershipRequest:

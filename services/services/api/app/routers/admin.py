@@ -2,14 +2,14 @@ import uuid
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
 from app.deps import require_permission
 from app.emailer import send_email_safe
-from app.models import UserRole, AccountStatus, Decision, MembershipRequest, Profile, utcnow
+from app.models import Department, UserRole, AccountStatus, Decision, MembershipRequest, Profile, utcnow
 from app.schemas import Message, PendingRequestOut, RejectIn
 from app.security import as_utc
 from app.services import audit
@@ -24,6 +24,7 @@ def list_pending(_: Profile = Depends(reviewer), db: Session = Depends(get_db)):
         select(MembershipRequest, Profile).join(Profile, Profile.id == MembershipRequest.user_id)
         .where(MembershipRequest.status == Decision.pending.value)
         .order_by(MembershipRequest.submitted_at)).all()
+    dept_names = dict(db.execute(select(Department.id, Department.name)).all())
     now, out = utcnow(), []
     for req, p in rows:
         deadline = as_utc(req.submitted_at) + timedelta(hours=settings.review_deadline_hours)
@@ -31,7 +32,9 @@ def list_pending(_: Profile = Depends(reviewer), db: Session = Depends(get_db)):
             id=req.id, user_id=p.id, first_name=p.first_name, last_name=p.last_name,
             email=p.email, birth_date=p.birth_date, school=p.school, locality=p.locality,
             submitted_at=req.submitted_at, review_deadline_at=deadline, overdue=deadline < now,
-            reminder_count=req.reminder_count, last_reminder_at=req.last_reminder_at))
+            reminder_count=req.reminder_count, last_reminder_at=req.last_reminder_at,
+            phone=p.phone, acronym=p.acronym,
+            departments=[dept_names[d] for d in (p.requested_department_ids or []) if d in dept_names]))
     return out
 
 
@@ -50,7 +53,17 @@ def approve(request_id: uuid.UUID, admin: Profile = Depends(reviewer), db: Sessi
     req, user = _load_pending(db, request_id)
     req.status, req.reviewed_by, req.reviewed_at = Decision.approved.value, admin.id, utcnow()
     user.account_status, user.joined_at = AccountStatus.active.value, utcnow()
-    db.add(UserRole(user_id=user.id,role='volunteer',assigned_by=admin.id))
+    db.add(UserRole(user_id=user.id, role='volunteer', assigned_by=admin.id))
+    # Requested departments become real memberships. The first one is the primary department.
+    requested = list(user.requested_department_ids or [])
+    if requested and user.primary_department_id is None:
+        user.primary_department_id = requested[0]
+    for dept_id in requested:
+        if dept_id == user.primary_department_id:
+            continue
+        db.execute(text("INSERT INTO member_departments (user_id, department_id, assigned_by) "
+                        "VALUES (:uid, :did, :by) ON CONFLICT DO NOTHING"),
+                   {"uid": user.id, "did": dept_id, "by": admin.id})
     audit(db, admin.id, "membership.approved", "membership_request", req.id, {"user_id": str(user.id)})
     db.commit()
     send_email_safe(user.email, "Bine ai venit în Overthink!",

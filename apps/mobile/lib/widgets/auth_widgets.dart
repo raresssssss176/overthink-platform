@@ -20,18 +20,21 @@ InputDecoration authInputDecoration(String label, {String? hint}) {
   );
 }
 
+/// The club logo from assets/images/logo.png (white letters, transparent background).
 class OverthinkLogo extends StatelessWidget {
-  const OverthinkLogo({super.key});
+  final double height;
+
+  const OverthinkLogo({super.key, this.height = 48});
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      'OVERTHINK',
-      style: TextStyle(
-        color: Colors.red,
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 2,
+    return Image.asset(
+      'assets/images/logo.png',
+      height: height,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => const Text(
+        'OVERTHINK',
+        style: TextStyle(color: Colors.red, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
       ),
     );
   }
@@ -126,6 +129,29 @@ class AuthButton extends StatelessWidget {
             ? const CircularProgressIndicator(color: Colors.white)
             : Text(label, style: const TextStyle(fontSize: 18, color: Colors.white)),
       ),
+    );
+  }
+}
+/// Large logo that fills the width of the screen, used as the header of the auth screens.
+class OverthinkHero extends StatelessWidget {
+  final double widthFactor;
+
+  const OverthinkHero({super.key, this.widthFactor = 1.0});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Image.asset(
+          'assets/images/logo.png',
+          width: constraints.maxWidth * widthFactor,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const Text(
+            'OVERTHINK',
+            style: TextStyle(color: Colors.red, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2),
+          ),
+        );
+      },
     );
   }
 }

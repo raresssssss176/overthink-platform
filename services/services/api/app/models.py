@@ -124,6 +124,7 @@ class PermissionGrant(Base):
     granted_by: Mapped[uuid.UUID]=mapped_column(Uuid)
     created_at: Mapped[datetime]=_ts(server_default=sqltext('now()'))
     revoked_at: Mapped[datetime|None]=_ts(nullable=True)
+    expires_at: Mapped[datetime]=_ts()
 
 class AuditLog(Base):
     __tablename__='audit_logs'

@@ -90,6 +90,7 @@ class ProfileOut(BaseModel):
     approved_minutes_cached: int
     joined_at: datetime | None
     account_status: str
+    roles: list[str] = []
 
     model_config = {"from_attributes": True}
 
@@ -117,6 +118,9 @@ class PendingRequestOut(BaseModel):
     overdue: bool
     reminder_count: int
     last_reminder_at: datetime | None
+    phone: str | None = None
+    acronym: str | None = None
+    departments: list[str] = []
 
 
 class RejectIn(BaseModel):

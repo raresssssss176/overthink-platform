@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
 import '../../widgets/auth_widgets.dart';
-import '../home/home_placeholder_screen.dart';
+import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'verify_email_screen.dart';
 
@@ -45,9 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result.isSuccess) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => HomePlaceholderScreen(accountStatus: result.value!),
-        ),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
       return;
     }
@@ -72,9 +70,9 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const SizedBox(height: 40),
-              const OverthinkLogo(),
-              const SizedBox(height: 60),
+              const SizedBox(height: 8),
+              const OverthinkHero(),
+              const SizedBox(height: 32),
               AuthCard(
                 title: 'Autentificare',
                 children: [
