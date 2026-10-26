@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../widgets/auth_widgets.dart';
 import '../admin/admin_screen.dart';
+import '../hours/add_hours_menu_screen.dart';
+import '../coordinator/coordinator_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -115,8 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
                 ),
-                // TODO: the hours form is built with the hours backend.
-                onPressed: () => _show('Adăugarea orelor va fi disponibilă în curând.'),
+                onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddHoursMenuScreen()),
+                ),
                 child: const Text(
                   'ADAUGĂ ORE',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -156,6 +159,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Setări',
             onTap: () => _openSection('Setări'),
           ),
+          if (_user!.roles.contains('coordinator'))
+            _NavItem(
+              icon: Icons.groups_outlined,
+              label: 'Echipa',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CoordinatorScreen()),
+              ),
+            ),
           // Visible only to administrators.
           if (isAdmin)
             _NavItem(

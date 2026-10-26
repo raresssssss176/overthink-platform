@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import '../../services/admin_api.dart';
 import '../../widgets/auth_widgets.dart';
 import 'member_detail_screen.dart';
+import 'audit_tab.dart';
+import '../shared/codes_tab.dart';
+import '../shared/review_tab.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -11,7 +14,7 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 5,
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
@@ -23,9 +26,13 @@ class AdminScreen extends StatelessWidget {
             indicatorColor: Colors.red,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white54,
+            isScrollable: true,
             tabs: [
               Tab(text: 'Cereri'),
               Tab(text: 'Voluntari'),
+              Tab(text: 'Ore'),
+              Tab(text: 'Coduri'),
+              Tab(text: 'Jurnal'),
             ],
           ),
         ),
@@ -33,6 +40,9 @@ class AdminScreen extends StatelessWidget {
           children: [
             _RequestsTab(),
             _MembersTab(),
+            ReviewTab(),
+            CodesTab(),
+            AuditTab(),
           ],
         ),
       ),
