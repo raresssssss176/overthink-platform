@@ -7,6 +7,7 @@ import 'member_detail_screen.dart';
 import 'audit_tab.dart';
 import '../shared/codes_tab.dart';
 import '../shared/review_tab.dart';
+import '../shared/events_tab.dart';
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
@@ -14,7 +15,7 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
@@ -32,7 +33,8 @@ class AdminScreen extends StatelessWidget {
               Tab(text: 'Voluntari'),
               Tab(text: 'Ore'),
               Tab(text: 'Coduri'),
-              Tab(text: 'Jurnal'),
+              Tab(text: 'Evenimente'),
+              Tab(text: 'Logs'),
             ],
           ),
         ),
@@ -42,6 +44,7 @@ class AdminScreen extends StatelessWidget {
             _MembersTab(),
             ReviewTab(),
             CodesTab(),
+            EventsTab(),
             AuditTab(),
           ],
         ),

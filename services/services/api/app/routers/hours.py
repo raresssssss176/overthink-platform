@@ -1,5 +1,5 @@
 """Hours: events, tasks, manual submissions, review (approve/reject) and history.
-Shared codes (one code for several volunteers) come in the next step."""
+Events are created in app/routers/events.py. Shared codes live in app/routers/codes.py."""
 import uuid
 from datetime import date
 
@@ -30,11 +30,6 @@ class EventOut(BaseModel):
     starts_at: date | None
 
 
-class EventIn(BaseModel):
-    title: str = Field(min_length=2, max_length=200)
-    starts_on: date | None = None
-
-
 class TaskOut(BaseModel):
     id: uuid.UUID
     name: str
@@ -46,7 +41,7 @@ class TaskIn(BaseModel):
 
 class ManualIn(BaseModel):
     department_id: uuid.UUID
-    # Either an existing event, or "Altul" with a typed title.
+    # Either an existing event, or "Altul" with a typed title (kept as a draft).
     event_id: uuid.UUID | None = None
     new_event_title: str | None = Field(default=None, min_length=2, max_length=200)
     task_id: uuid.UUID | None = None
@@ -91,20 +86,6 @@ _ENTRY_SELECT = """
 def _has_role(db: Session, user_id: uuid.UUID, role: str) -> bool:
     return db.execute(text("SELECT 1 FROM user_roles WHERE user_id = :uid AND role = :r"),
                       {"uid": user_id, "r": role}).first() is not None
-
-
-def _can(db: Session, user_id: uuid.UUID, permission: str) -> bool:
-    """Permission from the role catalogue, or an unexpired club-wide grant."""
-    row = db.execute(text("""
-        SELECT 1 FROM user_roles ur
-        JOIN role_permissions rp ON rp.role = ur.role
-        WHERE ur.user_id = :uid AND rp.permission = :p
-        UNION
-        SELECT 1 FROM permission_grants g
-        WHERE g.user_id = :uid AND g.permission = :p AND g.scope_type = 'club'
-          AND g.revoked_at IS NULL AND g.expires_at > now()
-        LIMIT 1"""), {"uid": user_id, "p": permission}).first()
-    return row is not None
 
 
 def _member_department_ids(db: Session, user_id: uuid.UUID) -> set[uuid.UUID]:
@@ -189,22 +170,6 @@ def list_events(_: Profile = Depends(require_active), db: Session = Depends(get_
             for r in rows]
 
 
-@router.post("/events", response_model=EventOut, status_code=status.HTTP_201_CREATED)
-def create_event(body: EventIn, user: Profile = Depends(require_active), db: Session = Depends(get_db)):
-    if not _can(db, user.id, "calendar.create"):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Nu ai permisiunea de a adăuga evenimente.")
-    row = db.execute(text("""
-        INSERT INTO activities (title, starts_at, status, visibility, created_by)
-        VALUES (:title, CAST(:starts AS timestamptz), 'published', 'club', :uid)
-        RETURNING id, title, starts_at"""),
-        {"title": body.title.strip(),
-         "starts": f"{body.starts_on.isoformat()} 00:00:00+00" if body.starts_on else None,
-         "uid": user.id}).first()
-    audit(db, user.id, "event.created", "activity", row.id, {"title": row.title})
-    db.commit()
-    return EventOut(id=row.id, title=row.title, starts_at=row.starts_at.date() if row.starts_at else None)
-
-
 @router.get("/events/{event_id}/tasks", response_model=list[TaskOut])
 def list_tasks(event_id: uuid.UUID, _: Profile = Depends(require_active), db: Session = Depends(get_db)):
     rows = db.execute(text(
@@ -245,9 +210,9 @@ def submit_manual(body: ManualIn, user: Profile = Depends(require_active), db: S
         # never see it. Coordinators or admins can publish or merge it later.
         event_title = body.new_event_title.strip()
         event_id = db.execute(text("""
-                                   INSERT INTO activities (title, status, visibility, created_by)
-                                   VALUES (:title, 'draft', 'club', :uid) RETURNING id"""),
-                              {"title": event_title, "uid": user.id}).scalar()
+            INSERT INTO activities (title, status, visibility, created_by)
+            VALUES (:title, 'draft', 'club', :uid)
+            RETURNING id"""), {"title": event_title, "uid": user.id}).scalar()
         audit(db, user.id, "event.draft_created", "activity", event_id, {"title": event_title})
 
     task_id = body.task_id

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import admin, auth, catalog, users, admin_members, team, audit_view, hours, codes
+from app.routers import admin, auth, catalog, users, admin_members, team, audit_view, hours, codes, events
 
 if settings.env == "prod" and len(settings.jwt_secret) < 32:
     raise RuntimeError("JWT_SECRET must be set (32+ chars) in production")
@@ -16,6 +16,7 @@ app.include_router(team.router)
 app.include_router(audit_view.router)
 app.include_router(hours.router)
 app.include_router(codes.router)
+app.include_router(events.router)
 
 @app.get("/health", tags=["meta"])
 def health():
