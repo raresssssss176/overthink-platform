@@ -7,6 +7,7 @@ import '../../widgets/auth_widgets.dart';
 import '../shared/codes_tab.dart';
 import '../shared/review_tab.dart';
 import '../shared/events_tab.dart';
+import 'all_volunteers_tab.dart';
 
 const Map<String, String> permissionLabels = {
   'calendar.create': 'Creează evenimente în calendar',
@@ -19,7 +20,7 @@ class CoordinatorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
@@ -33,6 +34,7 @@ class CoordinatorScreen extends StatelessWidget {
             unselectedLabelColor: Colors.white54,
             tabs: [
               Tab(text: 'Echipa'),
+              Tab(text: 'Voluntari'),
               Tab(text: 'Ore'),
               Tab(text: 'Coduri'),
               Tab(text: 'Evenimente'),
@@ -42,6 +44,7 @@ class CoordinatorScreen extends StatelessWidget {
         body: const TabBarView(
           children: [
             _TeamTab(),
+            AllVolunteersTab(),
             ReviewTab(),
             CodesTab(),
             EventsTab(),

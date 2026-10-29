@@ -15,6 +15,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Set to true to show the button again.
+  static const bool _showHistory = false;
+  static const bool _showProfile = false;
+  static const bool _showSettings = false;
+
   CurrentUser? _user;
   String? _loadError;
   bool _loading = true;
@@ -40,10 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadError = result.message;
       }
     });
-  }
-
-  void _show(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   void _openSection(String title) {
@@ -118,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
                 ),
                 onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddHoursMenuScreen()),
+                  MaterialPageRoute(builder: (_) => const AddHoursMenuScreen()),
                 ),
                 child: const Text(
                   'ADAUGĂ ORE',
@@ -134,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNavBar() {
     final isAdmin = _user!.isAdmin;
+    final isCoordinator = _user!.roles.contains('coordinator');
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -144,22 +146,25 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _NavItem(
-            icon: Icons.history,
-            label: 'Istoric',
-            onTap: () => _openSection('Istoric'),
-          ),
-          _NavItem(
-            icon: Icons.person_outline,
-            label: 'Profil',
-            onTap: () => _openSection('Profil'),
-          ),
-          _NavItem(
-            icon: Icons.settings_outlined,
-            label: 'Setări',
-            onTap: () => _openSection('Setări'),
-          ),
-          if (_user!.roles.contains('coordinator'))
+          if (_showHistory)
+            _NavItem(
+              icon: Icons.history,
+              label: 'Istoric',
+              onTap: () => _openSection('Istoric'),
+            ),
+          if (_showProfile)
+            _NavItem(
+              icon: Icons.person_outline,
+              label: 'Profil',
+              onTap: () => _openSection('Profil'),
+            ),
+          if (_showSettings)
+            _NavItem(
+              icon: Icons.settings_outlined,
+              label: 'Setări',
+              onTap: () => _openSection('Setări'),
+            ),
+          if (isCoordinator)
             _NavItem(
               icon: Icons.groups_outlined,
               label: 'Echipa',
