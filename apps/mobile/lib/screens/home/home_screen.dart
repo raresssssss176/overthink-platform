@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../widgets/auth_widgets.dart';
 import '../admin/admin_screen.dart';
-import '../hours/add_hours_menu_screen.dart';
+import '../calendar/calendar_screen.dart';
 import '../coordinator/coordinator_screen.dart';
+import '../hours/add_hours_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -146,6 +147,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          _NavItem(
+            icon: Icons.calendar_month,
+            label: 'Calendar',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CalendarScreen()),
+            ),
+          ),
           if (_showHistory)
             _NavItem(
               icon: Icons.history,
