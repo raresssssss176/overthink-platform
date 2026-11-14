@@ -91,6 +91,7 @@ class ProfileOut(BaseModel):
     joined_at: datetime | None
     account_status: str
     roles: list[str] = []
+    permissions: list[str] = []
 
     model_config = {"from_attributes": True}
 

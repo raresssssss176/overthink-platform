@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../widgets/auth_widgets.dart';
 import '../admin/admin_screen.dart';
+import '../attendance/attendance_events_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../coordinator/coordinator_screen.dart';
 import '../hours/add_hours_menu_screen.dart';
@@ -137,6 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNavBar() {
     final isAdmin = _user!.isAdmin;
     final isCoordinator = _user!.roles.contains('coordinator');
+    final canMarkAttendance = _user!.canMarkAttendance;
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -154,6 +156,14 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(builder: (_) => const CalendarScreen()),
             ),
           ),
+          if (canMarkAttendance)
+            _NavItem(
+              icon: Icons.fact_check_outlined,
+              label: 'Absențe',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AttendanceEventsScreen()),
+              ),
+            ),
           if (_showHistory)
             _NavItem(
               icon: Icons.history,

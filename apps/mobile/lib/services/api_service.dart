@@ -47,6 +47,7 @@ class CurrentUser {
   final String email;
   final String accountStatus;
   final List<String> roles;
+  final List<String> permissions;
 
   const CurrentUser({
     required this.id,
@@ -55,9 +56,13 @@ class CurrentUser {
     required this.email,
     required this.accountStatus,
     required this.roles,
+    required this.permissions,
   });
 
   bool get isAdmin => roles.contains('admin');
+  bool get isCoordinator => roles.contains('coordinator');
+  bool get canMarkAttendance =>
+      isAdmin || isCoordinator || permissions.contains('attendance.mark');
 
   factory CurrentUser.fromJson(Map<String, dynamic> json) {
     return CurrentUser(
@@ -67,6 +72,7 @@ class CurrentUser {
       email: json['email'] as String,
       accountStatus: json['account_status'] as String,
       roles: (json['roles'] as List<dynamic>? ?? []).cast<String>(),
+      permissions: (json['permissions'] as List<dynamic>? ?? []).cast<String>(),
     );
   }
 }

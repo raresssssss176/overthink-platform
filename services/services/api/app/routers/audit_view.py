@@ -34,6 +34,8 @@ def _category(action: str) -> str:
         return "permission"
     if action.startswith("hours."):
         return "hours"
+    if action.startswith("attendance"):
+        return "attendance"
     if action.startswith("membership.") or action.startswith("account.") or action == "member.deleted":
         return "account"
     return "other"
@@ -54,6 +56,10 @@ def _describe(action: str, meta: dict, dept_names: dict[str, str], perm_labels: 
         return "Cerere de aderare respinsă"
     if action == "member.deleted":
         return "Cont șters"
+    if action == "attendance.marked":
+        count = meta.get("updated_count")
+        extra = f" ({count} membri)" if isinstance(count, int) else ""
+        return f"Prezență salvată{extra}"
     if action == "account.registered":
         return "Cont nou înregistrat"
     if action.startswith("hours."):

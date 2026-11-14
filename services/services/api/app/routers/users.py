@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -15,51 +15,39 @@ from app.services import notify_reviewers
 router = APIRouter(tags=["users"])
 
 
+def _effective_permissions(db: Session, user_id, roles: list[str]) -> list[str]:
+    if "admin" in roles:
+        rows = db.execute(text("SELECT code FROM permission_types WHERE is_active")).scalars().all()
+        return sorted(set(rows))
+
+    perms: set[str] = set()
+    if roles:
+        role_rows = db.execute(text("""
+            SELECT rp.permission
+            FROM role_permissions rp
+            JOIN permission_types pt ON pt.code = rp.permission
+            WHERE pt.is_active AND rp.role = ANY(:roles)"""),
+            {"roles": roles}).scalars().all()
+        perms.update(role_rows)
+
+    grant_rows = db.execute(text("""
+        SELECT pg.permission
+        FROM permission_grants pg
+        JOIN permission_types pt ON pt.code = pg.permission
+        WHERE pt.is_active
+          AND pg.user_id = :uid
+          AND pg.revoked_at IS NULL
+          AND pg.expires_at > now()"""),
+        {"uid": user_id}).scalars().all()
+    perms.update(grant_rows)
+    return sorted(perms)
+
+
 @router.get("/users/me", response_model=ProfileOut)
 def me(user: Profile = Depends(get_current_user), db: Session = Depends(get_db)):
     roles = list(db.scalars(select(UserRole.role).where(UserRole.user_id == user.id)).all())
-    return ProfileOut.model_validate(user).model_copy(update={"roles": roles})
-
-
-def _latest_request(db: Session, user: Profile) -> MembershipRequest:
-    req = db.scalar(select(MembershipRequest).where(MembershipRequest.user_id == user.id)
-                    .order_by(MembershipRequest.submitted_at.desc()))
-    if req is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No membership request")
-    return req
-
-
-def _next_reminder_at(req: MembershipRequest):
-    base = as_utc(req.last_reminder_at or req.submitted_at)
-    return base + timedelta(hours=settings.reminder_cooldown_hours)
-
-
-@router.get("/membership/status", response_model=MembershipStatusOut)
-def membership_status(user: Profile = Depends(get_current_user), db: Session = Depends(get_db)):
-    req = _latest_request(db, user)
-    pending = req.status == Decision.pending.value
-    nxt = _next_reminder_at(req)
-    can = pending and req.reminder_count < settings.max_reminders and nxt <= utcnow()
-    return MembershipStatusOut(
-        decision=req.status, submitted_at=req.submitted_at,
-        review_deadline_at=as_utc(req.submitted_at) + timedelta(hours=settings.review_deadline_hours),
-        rejection_reason=req.decision_reason, can_remind=can,
-        next_reminder_at=nxt if pending else None)
-
-
-@router.post("/membership/remind", response_model=Message)
-def remind(user: Profile = Depends(get_current_user), db: Session = Depends(get_db)):
-    """A reminder to the reviewers, not a new application."""
-    req = db.scalar(select(MembershipRequest).where(MembershipRequest.user_id == user.id,
-                    MembershipRequest.status == Decision.pending.value))
-    if req is None:
-        raise HTTPException(status.HTTP_409_CONFLICT, "No pending request")
-    if req.reminder_count >= settings.max_reminders:
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Reminder limit reached")
-    if _next_reminder_at(req) > utcnow():
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Reminder not available yet")
-    req.last_reminder_at, req.reminder_count = utcnow(), req.reminder_count + 1
-    db.commit()
-    notify_reviewers(db, "Reamintire: cerere de aderare în așteptare",
-                     f"{user.first_name} {user.last_name} așteaptă încă o decizie.")
-    return Message(message="Administratorii au fost notificați.")
+    permissions = _effective_permissions(db, user.id, roles)
+    return ProfileOut.model_validate(user).model_copy(update={
+        "roles": roles,
+        "permissions": permissions,
+    })

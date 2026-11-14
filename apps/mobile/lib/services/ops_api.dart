@@ -198,10 +198,17 @@ class OpsApi {
     );
   }
 
-  static Future<ApiResult<bool>> redeemCode(String code) {
+  static Future<ApiResult<String>> redeemCode(String code) {
     return _send(
-          (h) => http.post(Uri.parse('$_base/codes/redeem'), headers: h, body: jsonEncode({'code': code})),
-          (_) => true,
+          (h) => http.post(
+        Uri.parse('$_base/codes/redeem'),
+        headers: h,
+        body: jsonEncode({'code': code.trim()}),
+      ),
+          (r) {
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        return (body['message'] as String?) ?? 'Orele au fost adăugate.';
+      },
     );
   }
 
