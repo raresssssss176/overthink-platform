@@ -86,9 +86,12 @@ def register(body: RegisterIn, request: Request, background_tasks: BackgroundTas
         # registration attempts from becoming an e-mail spam endpoint.
         return _VERIFICATION_GENERIC
 
+    # The general meeting is not a registration choice; members get it automatically.
     requested = set(body.department_ids)
     valid = set(db.scalars(select(Department.id).where(
-        Department.id.in_(requested), Department.is_active.is_(True))).all())
+        Department.id.in_(requested),
+        Department.is_active.is_(True),
+        Department.slug != "sedinta-generala")).all())
     if valid != requested:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid department selection")
 

@@ -8,10 +8,15 @@ from app.schemas import DepartmentOut
 
 router = APIRouter(tags=["catalog"])
 
+# The general meeting is not a registration choice; members get it automatically.
+HIDDEN_FROM_REGISTRATION = "sedinta-generala"
+
 
 @router.get("/departments", response_model=list[DepartmentOut])
 def list_departments(db: Session = Depends(get_db)):
     """Public list of active departments, used by the registration form."""
     return db.scalars(
-        select(Department).where(Department.is_active.is_(True)).order_by(Department.name)
+        select(Department)
+        .where(Department.is_active.is_(True), Department.slug != HIDDEN_FROM_REGISTRATION)
+        .order_by(Department.name)
     ).all()

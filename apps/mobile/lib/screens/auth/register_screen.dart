@@ -210,10 +210,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             selected: _selectedDepartmentIds.contains(d.id),
             selectedColor: Colors.red,
             checkmarkColor: Colors.white,
+            backgroundColor: Colors.black26,
             labelStyle: TextStyle(
               color: _selectedDepartmentIds.contains(d.id) ? Colors.white : Colors.white70,
             ),
-            backgroundColor: Colors.black26,
             onSelected: (selected) {
               setState(() {
                 if (selected) {

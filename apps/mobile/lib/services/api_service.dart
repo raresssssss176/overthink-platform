@@ -129,7 +129,7 @@ class PendingRequest {
 
 class ApiService {
   // 10.0.2.2 is how the Android emulator reaches localhost on your PC.
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const String baseUrl = 'https://api.overthink-jr.com';
   static const Duration _timeout = Duration(seconds: 15);
   static const Map<String, String> _jsonHeaders = {'Content-Type': 'application/json'};
 
@@ -150,6 +150,29 @@ class ApiService {
       return _failure(response);
     } catch (_) {
       return _networkFailure();
+    }
+  }
+
+  static Future<bool> refreshSession() async {
+    final refresh = await TokenStore.refreshToken();
+    if (refresh == null) return false;
+    try {
+      final response = await http
+          .post(
+        Uri.parse('$baseUrl/auth/refresh'),
+        headers: _jsonHeaders,
+        body: jsonEncode({'refresh_token': refresh}),
+      )
+          .timeout(_timeout);
+      if (response.statusCode != 200) return false;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      await TokenStore.save(
+        access: data['access_token'] as String,
+        refresh: data['refresh_token'] as String,
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
