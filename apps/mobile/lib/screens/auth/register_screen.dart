@@ -180,6 +180,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _show(result.message!);
     }
   }
+  /// Department from the server with this slug is shown, but it cannot be selected.
+  static const String _generalMeetingSlug = 'sedinta-generala';
 
   Widget _buildDepartments() {
     if (_departmentsError != null) {
@@ -204,27 +206,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (final d in _departments!)
-          FilterChip(
-            label: Text(d.name),
-            selected: _selectedDepartmentIds.contains(d.id),
-            selectedColor: Colors.red,
-            checkmarkColor: Colors.white,
-            backgroundColor: Colors.black26,
-            labelStyle: TextStyle(
-              color: _selectedDepartmentIds.contains(d.id) ? Colors.white : Colors.white70,
-            ),
-            onSelected: (selected) {
-              setState(() {
-                if (selected) {
-                  _selectedDepartmentIds.add(d.id);
-                } else {
-                  _selectedDepartmentIds.remove(d.id);
-                }
-              });
-            },
-          ),
+        for (final d in _departments!) _departmentChip(d),
       ],
+    );
+  }
+
+
+  Widget _departmentChip(Department d) {
+    final isGeneral = d.slug == _generalMeetingSlug;
+    final selected = _selectedDepartmentIds.contains(d.id);
+    return FilterChip(
+      label: Text(d.name),
+      selected: selected,
+      // onSelected: null makes the chip disabled: grayed out and not tappable.
+      onSelected: isGeneral
+          ? null
+          : (value) {
+        setState(() {
+          if (value) {
+            _selectedDepartmentIds.add(d.id);
+          } else {
+            _selectedDepartmentIds.remove(d.id);
+          }
+        });
+      },
+      selectedColor: Colors.red,
+      checkmarkColor: Colors.white,
+      backgroundColor: Colors.black26,
+      disabledColor: Colors.black12,
+      labelStyle: TextStyle(
+        color: isGeneral
+            ? Colors.white24
+            : (selected ? Colors.white : Colors.white70),
+      ),
     );
   }
 
